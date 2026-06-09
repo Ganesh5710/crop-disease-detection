@@ -1,97 +1,42 @@
 from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import os
 
 from predict import predict_disease
 
-# ======================================
-# FastAPI App
-# ======================================
+app = FastAPI()
 
-app = FastAPI(
-    title="Crop Disease Detection API",
-    description="Predict crop diseases using ResNet50",
-    version="1.0"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-# ======================================
-# Upload Directory
-# ======================================
 
 UPLOAD_DIR = "uploads"
-
-os.makedirs(
-    UPLOAD_DIR,
-    exist_ok=True
-)
-
-# ======================================
-# Home Route
-# ======================================
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.get("/")
 def home():
+    return {"message": "API Running"}
 
-    return {
-        "message": "Crop Disease Detection API Running"
-    }
-
-# ======================================
-# Prediction Route
-# ======================================
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
 
 @app.post("/predict")
-async def predict(
-    file: UploadFile = File(...)
-):
+async def predict(file: UploadFile = File(...)):
 
     file_path = os.path.join(
         UPLOAD_DIR,
         file.filename
     )
 
-    with open(
-        file_path,
-        "wb"
-    ) as buffer:
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
-        shutil.copyfileobj(
-            file.file,
-            buffer
-        )
+    result = predict_disease(file_path)
 
-    result = predict_disease(
-        file_path
-    )
-
-    return {
-        "filename": file.filename,
-        "prediction": result["disease"],
-        "confidence": result["confidence"]
-    }
-
-# ======================================
-# Health Route
-# ======================================
-
-@app.get("/health")
-def health():
-
-    return {
-        "status": "healthy"
-    }
-
-# ======================================
-# Run Locally
-# ======================================
-
-if __name__ == "__main__":
-
-    import uvicorn
-
-    uvicorn.run(
-        "app:app",
-        host="127.0.0.1",
-        port=8000,
-        reload=True
-    )
+    return result

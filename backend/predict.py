@@ -7,11 +7,19 @@ from PIL import Image
 # Model Path
 # ======================================
 
-MODEL_PATH = os.path.join(
-    "..",
-    "models",
-    "resnet50_model.keras"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_PATH = os.path.abspath(
+    os.path.join(
+        BASE_DIR,
+        "..",
+        "models",
+        "resnet50_model.keras"
+    )
 )
+
+print("Model Path:", MODEL_PATH)
+print("Model Exists:", os.path.exists(MODEL_PATH))
 
 # ======================================
 # Class Names
@@ -20,11 +28,9 @@ MODEL_PATH = os.path.join(
 CLASS_NAMES = [
     "Pepper__bell___Bacterial_spot",
     "Pepper__bell___healthy",
-
     "Potato___Early_blight",
     "Potato___Late_blight",
     "Potato___healthy",
-
     "Tomato_Bacterial_spot",
     "Tomato_Early_blight",
     "Tomato_Late_blight",
@@ -41,12 +47,12 @@ CLASS_NAMES = [
 # Load Model
 # ======================================
 
-print("Loading ResNet50 Model...")
-
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(
         f"Model not found: {MODEL_PATH}"
     )
+
+print("Loading Model...")
 
 model = tf.keras.models.load_model(
     MODEL_PATH
@@ -64,11 +70,15 @@ def preprocess_image(image_path):
 
     image = image.convert("RGB")
 
-    image = image.resize((224, 224))
+    image = image.resize(
+        (224, 224)
+    )
 
     image = np.array(image)
 
-    image = image.astype("float32") / 255.0
+    image = image.astype(
+        "float32"
+    ) / 255.0
 
     image = np.expand_dims(
         image,
@@ -83,35 +93,53 @@ def preprocess_image(image_path):
 
 def predict_disease(image_path):
 
-    image = preprocess_image(
-        image_path
-    )
+    try:
 
-    prediction = model.predict(
-        image,
-        verbose=0
-    )
-
-    class_index = np.argmax(
-        prediction
-    )
-
-    confidence = (
-        float(np.max(prediction))
-        * 100
-    )
-
-    disease_name = CLASS_NAMES[
-        class_index
-    ]
-
-    return {
-        "disease": disease_name,
-        "confidence": round(
-            confidence,
-            2
+        image = preprocess_image(
+            image_path
         )
-    }
+
+        prediction = model.predict(
+            image,
+            verbose=0
+        )
+
+        class_index = int(
+            np.argmax(prediction)
+        )
+
+        confidence = float(
+            np.max(prediction)
+        ) * 100
+
+        if class_index >= len(CLASS_NAMES):
+
+            return {
+                "disease": "Unknown",
+                "confidence": 0.0
+            }
+
+        disease_name = CLASS_NAMES[
+            class_index
+        ]
+
+        return {
+            "disease": disease_name,
+            "confidence": round(
+                confidence,
+                2
+            )
+        }
+
+    except Exception as e:
+
+        print("Prediction Error:", str(e))
+
+        return {
+            "disease": "Error",
+            "confidence": 0.0,
+            "error": str(e)
+        }
 
 # ======================================
 # Local Testing
@@ -127,11 +155,10 @@ if __name__ == "__main__":
             test_image
         )
 
-        print("\nPrediction Result:")
         print(result)
 
     else:
 
         print(
-            "\nPlace sample.jpg inside backend folder for testing."
+            "Place sample.jpg inside backend folder"
         )
