@@ -44,21 +44,34 @@ CLASS_NAMES = [
 ]
 
 # ======================================
-# Load Model
+# Load Model Safely
 # ======================================
 
-if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(
-        f"Model not found: {MODEL_PATH}"
+model = None
+
+try:
+
+    if os.path.exists(MODEL_PATH):
+
+        print("Loading Model...")
+
+        model = tf.keras.models.load_model(
+            MODEL_PATH
+        )
+
+        print("Model Loaded Successfully")
+
+    else:
+
+        print(
+            f"WARNING: Model not found: {MODEL_PATH}"
+        )
+
+except Exception as e:
+
+    print(
+        f"Model Loading Error: {str(e)}"
     )
-
-print("Loading Model...")
-
-model = tf.keras.models.load_model(
-    MODEL_PATH
-)
-
-print("Model Loaded Successfully")
 
 # ======================================
 # Image Preprocessing
@@ -94,6 +107,13 @@ def preprocess_image(image_path):
 def predict_disease(image_path):
 
     try:
+
+        if model is None:
+
+            return {
+                "disease": "Model Not Available",
+                "confidence": 0.0
+            }
 
         image = preprocess_image(
             image_path
@@ -133,7 +153,10 @@ def predict_disease(image_path):
 
     except Exception as e:
 
-        print("Prediction Error:", str(e))
+        print(
+            "Prediction Error:",
+            str(e)
+        )
 
         return {
             "disease": "Error",
