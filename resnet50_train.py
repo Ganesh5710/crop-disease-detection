@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
+from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import (
@@ -25,7 +25,7 @@ DATASET_PATH = r"Dataset\PlantVillage"
 
 IMAGE_SIZE = (224, 224)
 BATCH_SIZE = 32
-EPOCHS = 2
+EPOCHS = 20
 
 # ======================================
 
@@ -119,7 +119,11 @@ include_top=False,
 input_shape=(224, 224, 3)
 )
 
-base_model.trainable = False
+for layer in base_model.layers[:-30]:
+    layer.trainable = False
+
+for layer in base_model.layers[-30:]:
+    layer.trainable = True
 
 # ======================================
 
@@ -163,7 +167,7 @@ Dense(
 
 model.compile(
 optimizer=Adam(
-learning_rate=0.0001
+learning_rate=0.00001
 ),
 loss="categorical_crossentropy",
 metrics=["accuracy"]
@@ -198,13 +202,10 @@ verbose=1
 # ======================================
 
 print("\nStarting Training...\n")
-
 history = model.fit(
     train_generator,
     validation_data=val_generator,
-    epochs=2,
-    steps_per_epoch=20,
-    validation_steps=5,
+    epochs=EPOCHS,
     callbacks=[
         early_stop,
         reduce_lr

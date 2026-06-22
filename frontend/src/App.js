@@ -61,7 +61,7 @@ function App() {
 
       const response =
         await axios.post(
-          "https://crop-disease-detection-166c.onrender.com/",
+          "http://127.0.0.1:8000/predict",
           formData,
           {
             headers: {
